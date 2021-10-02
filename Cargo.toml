@@ -1,0 +1,26 @@
+[package]
+authors = ["ihciah <ihciah@gmail.com>"]
+edition = '2018'
+description = "Make your DNS cleaner."
+name = "clean-dns-bpf"
+version = "0.1.0"
+
+[dependencies]
+cty = "0.2"
+redbpf-macros = "2.0"
+redbpf-probes = "2.0"
+
+[build-dependencies]
+cargo-bpf = {version = "2.0", default-features = false}
+
+[features]
+default = []
+probes = []
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "clean-dns"
+path = "src/clean_dns.rs"
+required-features = ["probes"]
