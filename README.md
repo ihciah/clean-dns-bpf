@@ -1,20 +1,29 @@
 # Clean DNS with eBPF
 基于 Rust + eBPF 丢弃 GFW DNS 污染包
 
-## Build
-```
-cargo bpf build clean-dns
-```
+> 注：只在 Linux 上能用，且需要内核支持 XDP。
 
-## Run
-```
-sudo cargo bpf load -i eth0 target/bpf/programs/clean-dns/clean-dns.elf
-```
+## How to Use
+1. 下载 [最新的 release](https://github.com/ihciah/clean-dns-bpf/releases)
+2. 想要加载到内核时(记得修改 eth0 为你的出口网卡名，以及修改 clean-dns.elf 的路径):
+    ```
+    sudo ip link set dev eth0 xdp obj ./clean-dns.elf
+    ```
+    正常使用的话，只需要在网卡 ready 后把 elf 挂上去就行了（重启后需再次挂载）。
+3. 当你想从内核卸载这个 bpf 时(同样，记得修改 eth0 为你的网卡名)：
+    ```
+    sudo ip link set dev eth0 xdp off
+    ```
+    正常使用无需卸载。
 
-## TODO
-Convert to iptables command.
+## Features
+当挂在本 bpf 后，对应网卡上到 `8.8.8.8:53` 的 DNS 请求对应响应上的 GFW 污染会被过滤掉。
+
+即你可以在没有梯子的情况下得到正确的 8.8.8.8 对任意域名的解析结果。所以，如果你使用本程序，请记得将 dns 修改为 8.8.8.8。
 
 ## How It Works
+本节大致说明工作原理。
+
 GFW 污染 DNS 的方式为抢答，我们只需要丢弃投毒响应即可获得正确的解析结果。通过 eBPF 我们可以在内核中插入代码，相比在用户态启动代理，这样可以获得更好的性能。
 
 要丢弃投毒响应，重点是找到它们的特征。
@@ -38,5 +47,39 @@ c00c 这个特征也可以作为判断依据，但是要做较多解析和计算
 这时我们可以验证，google 系的域名也可以正确解析。
 ![screen shot:google](https://i.v2ex.co/0q8nlQi3.png)
 
-## Note
+## For Developers
+如果你想二次开发或自行编译，可以参考本节内容。普通用户无需操作。
+### Build
+```
+cargo bpf build clean-dns
+```
+
+### Run
+```
+sudo cargo bpf load -i eth0 target/bpf/programs/clean-dns/clean-dns.elf
+```
+
+### Release
+To load elf with `ip` command([ref](https://github.com/aquarhead/protect-the-rabbit/blob/master/Makefile.toml)).
+```
+llvm-objcopy \
+--remove-section .debug_loc \
+--remove-section .debug_info \
+--remove-section .debug_ranges \
+--remove-section .BTF.ext \
+--remove-section .eh_frame \
+--remove-section .debug_line \
+--remove-section .debug_pubnames \
+--remove-section .debug_pubtypes \
+--remove-section .debug_abbrev \
+--remove-section .debug_str \
+--remove-section .text \
+--remove-section .BTF \
+--remove-section .symtab \
+--remove-section .rel.BTF \
+--rename-section xdp/clean_dns=prog \
+./clean-dns.elf
+```
+
+### Note
 Inspired by [@llcccd](https://twitter.com/gnodeb/status/1443975021840551941)
