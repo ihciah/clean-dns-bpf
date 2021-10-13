@@ -49,6 +49,11 @@ c00c 这个特征也可以作为判断依据，但是要做较多解析和计算
 
 ## For Developers
 如果你想二次开发或自行编译，可以参考本节内容。普通用户无需操作。
+### Install cargo-bpf
+```
+cargo install cargo-bpf --git https://github.com/redsift/redbpf
+```
+
 ### Build
 ```
 cargo bpf build clean-dns
