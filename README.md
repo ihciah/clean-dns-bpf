@@ -10,6 +10,15 @@
     sudo ip link set dev eth0 xdp obj ./clean-dns.elf
     ```
     正常使用的话，只需要在网卡 ready 后把 elf 挂上去就行了（重启后需再次挂载）。
+
+xdpdrv模式并非每类网卡都可用，多数的Intel网卡、virtio网卡可用xdpdrv模式。若无法使用xdpdrv模式，则可以使用xdpgeneric模式，即：
+    ```
+    sudo ip link set dev eth0 xdpgeneric obj ./clean-dns.elf
+    ```
+
+> Note:
+>   xdp有三种模式: 1. xdpoffload，即智能网卡（例如支持Netronome’s nfp 驱动的网卡）实现了xdpoffload模式 ，允许将整个eBPF/xdp程序offload到硬件，因此程序在网卡收到包时就直接在网卡进行处理；2. xdpdrv，即eBPF/xdp程序直接在驱动的接收路径上运行，理论上这是软件层最早可以处理包的位置；3. xdpgeneric，generic xdp hook位于内核协议栈的主接收路径，接受的是skb格式的包，这些hook位于ingress路径的很后面。
+
 3. 当你想从内核卸载这个 bpf 时(同样，记得修改 eth0 为你的网卡名)：
     ```
     sudo ip link set dev eth0 xdp off
